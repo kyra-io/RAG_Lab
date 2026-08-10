@@ -1,12 +1,33 @@
-import numpy as np
+from database import get_connection
 
-def cosine_similarity(
-    vector_a: list[float],
-    vector_b: list[float],
-) -> float:
-    a = np.array(vector_a)
-    b = np.array(vector_b)
+def search_chunks(
+    query_embedding: list[float],
+    limit: int = 5,
+) -> list[dict]:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    source,
+                    chunk_id,
+                    content,
+                    distance
+                FROM search_chunks(%s::vector, %s)
+                """,
+                (query_embedding, limit),
+            )
 
-    return np.dot(a, b) / (
-        np.linalg.norm(a) * np.linalg.norm(b)
-    )
+            rows = cursor.fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "source": row[1],
+            "chunk_id": row[2],
+            "content": row[3],
+            "distance": row[4],
+        }
+        for row in rows
+    ]

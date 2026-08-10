@@ -1,33 +1,106 @@
-from loader import load_documents
-from chunker import chunk_text
 from embedder import Embedder
-from indexer import insert_chunks
+from retriever import search_chunks
+from prompt import build_context, build_prompt
+from llm import LLM
 
-documents = load_documents("data/documents")
 
-all_chunks = []
+question = "Do I need to manage my database server?"
 
-for document in documents:
-    chunks = chunk_text(
-        text=document["content"],
-        source=document["source"],
-        chunk_size=100,
-    )
 
-    all_chunks.extend(chunks)
-
-print(f"Loaded {len(documents)} documents")
-print(f"Created {len(all_chunks)} chunks")
+# ---------------------------------
+# 1. EMBEDDING
+# ---------------------------------
 
 embedder = Embedder()
 
-texts = [chunk["content"] for chunk in all_chunks]
+query_embedding = embedder.embed([question])[0]
 
-embeddings = embedder.embed(texts)
 
-for chunk, embedding in zip(all_chunks, embeddings):
-    chunk["embedding"] = embedding
+# ---------------------------------
+# 2. RETRIEVAL
+# ---------------------------------
 
-inserted = insert_chunks(all_chunks)
+results = search_chunks(
+    query_embedding=query_embedding,
+    limit=5,
+)
 
-print(f"Inserted {inserted} chunks")
+
+print("=" * 80)
+print("QUESTION")
+print("=" * 80)
+
+print(question)
+
+
+print("\n")
+print("=" * 80)
+print("RETRIEVED CHUNKS")
+print("=" * 80)
+
+for i, result in enumerate(results, start=1):
+    print(
+        f"\n#{i}"
+        f" | distance={result['distance']:.4f}"
+        f" | source={result['source']}"
+        f" | chunk={result['chunk_id']}"
+    )
+
+    print(result["content"])
+
+
+# ---------------------------------
+# 3. CONTEXT
+# ---------------------------------
+
+context = build_context(results)
+
+
+print("\n")
+print("=" * 80)
+print("CONTEXT")
+print("=" * 80)
+
+print(context)
+
+
+# ---------------------------------
+# 4. PROMPT
+# ---------------------------------
+
+prompt = build_prompt(
+    question=question,
+    context=context,
+)
+
+
+print("\n")
+print("=" * 80)
+print("PROMPT")
+print("=" * 80)
+
+print(prompt)
+
+
+# ---------------------------------
+# 5. LLM
+# ---------------------------------
+
+llm = LLM()
+
+response = llm.generate(prompt)
+
+
+print("\n")
+print("=" * 80)
+print("ANSWER")
+print("=" * 80)
+
+print(response["answer"])
+
+print("\n")
+print("=" * 80)
+print("MODEL")
+print("=" * 80)
+
+print(response["model"])
