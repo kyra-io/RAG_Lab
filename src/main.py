@@ -28,6 +28,6 @@ embeddings = embedder.embed(texts)
 for chunk, embedding in zip(all_chunks, embeddings):
     chunk["embedding"] = embedding
 
-insert_chunks(all_chunks)
+inserted = insert_chunks(all_chunks)
 
-print("Chunks inserted into PostgreSQL")
+print(f"Inserted {inserted} chunks")
