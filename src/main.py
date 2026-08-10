@@ -1,50 +1,33 @@
-# from loader import load_documents
-# from chunker import chunk_text
-
-
-# documents = load_documents("data/documents")
-
-# all_chunks = []
-
-# for document in documents:
-#     chunks = chunk_text(
-#         text=document["content"],
-#         source=document["source"],
-#         chunk_size=100,
-#     )
-
-#     all_chunks.extend(chunks)
-
-
-# print(f"Loaded {len(documents)} documents")
-# print(f"Created {len(all_chunks)} chunks\n")
-
-# for chunk in all_chunks:
-#     print(f"--- {chunk['source']} | chunk {chunk['chunk_id']} ---")
-#     print(chunk["content"])
-#     print()
-
+from loader import load_documents
+from chunker import chunk_text
 from embedder import Embedder
-from retriever import cosine_similarity
+from indexer import insert_chunks
 
+documents = load_documents("data/documents")
+
+all_chunks = []
+
+for document in documents:
+    chunks = chunk_text(
+        text=document["content"],
+        source=document["source"],
+        chunk_size=100,
+    )
+
+    all_chunks.extend(chunks)
+
+print(f"Loaded {len(documents)} documents")
+print(f"Created {len(all_chunks)} chunks")
 
 embedder = Embedder()
 
-query = "Do I need to manage my database server?"
+texts = [chunk["content"] for chunk in all_chunks]
 
-texts = [
-    "Acme Database is a managed PostgreSQL service.",
-    "Customers do not need to manage database servers.",
-    "Acme Cloud is headquartered in Lisbon.",
-]
+embeddings = embedder.embed(texts)
 
-query_embedding = embedder.embed([query])[0]
-text_embeddings = embedder.embed(texts)
+for chunk, embedding in zip(all_chunks, embeddings):
+    chunk["embedding"] = embedding
 
-for text, embedding in zip(texts, text_embeddings):
-    similarity = cosine_similarity(
-        query_embedding,
-        embedding,
-    )
+insert_chunks(all_chunks)
 
-    print(f"{similarity:.4f}  {text}")
+print("Chunks inserted into PostgreSQL")
