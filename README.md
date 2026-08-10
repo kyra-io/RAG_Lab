@@ -11,4 +11,6 @@ docker exec -it rag-postgres psql -U rag -d rag
 ```
 
 ## Create tables
-* Execute, by order, steps in ``` bash /db/steps/```
+* Execute, by order, steps in ```
+bash /db/steps/
+```
